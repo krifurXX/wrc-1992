@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# WRC-1992 Diagram — weld metal ferrite prediction
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interactive teaching app (University West, Sweden) for the **WRC-1992
+constitution diagram** (Kotecki & Siewert, *Welding Journal* 71(5), 1992,
+pp. 171s–178s): predict the Ferrite Number (FN) and solidification mode
+(A / AF / FA / F) of stainless weld metal from chemical composition.
 
-Currently, two official plugins are available:
+Sister app to the [Schaeffler diagram app](https://scheffler-v2.vercel.app),
+with the same welding workflow:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Base materials **A** and **B** — 12 presets (austenitic, duplex 2205,
+  ferritic, martensitic, structural steel, common fillers) or a **custom
+  chemical composition** (C, Mn, Si, Cr, Ni, Mo, Nb, N, Cu)
+- Optional **filler metal C** with root-pass and fill-pass **dilution**
+- **Multi-pass welding**: pass 1 dilutes into the base-metal mix, later passes
+  into the previous pass — watch the points converge toward the filler
+- Per-pass FN table, solidification-mode readout, validity warnings
 
-## React Compiler
+Equivalents: `Creq = Cr + Mo + 0.7 Nb`, `Nieq = Ni + 35 C + 20 N + 0.25 Cu` —
+unlike Schaeffler, nitrogen and copper are part of the model.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Diagram data provenance
 
-## Expanding the ESLint configuration
+The iso-FN lines and mode boundaries in `src/data/wrc1992.ts` were digitized
+from Fig. 6 of the original paper (600 dpi, least-squares grid calibration,
+residuals < 0.02 equivalent units) by the reproducible pipeline in
+`scripts/digitize/`. The emitter refuses to write the data file unless the
+paper's own numeric anchors (worked Examples 1–2 and Table 1) are reproduced;
+the same anchors are locked in `src/lib/wrc.test.ts`. Do not edit the data
+file by hand — re-run the pipeline.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Development
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev        # dev server
+npx vitest run     # 38 tests incl. the paper anchors
+npm run build      # tsc + vite
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Deployed on Vercel as project `wrc-1992`.
