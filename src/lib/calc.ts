@@ -1,14 +1,21 @@
 import type { Composition } from '../data/materials'
-import { AXIS, FERRITE_LINES, REGIONS, type Point, type Region } from '../data/schaeffler'
+import {
+  AXIS,
+  FN_LINES,
+  FN_VALID_POLYGON,
+  MODES,
+  type Mode,
+  type Point,
+} from '../data/wrc1992'
 
-/** Cr_eq = %Cr + %Mo + 1.5·%Si + 0.5·%Nb  (Schaeffler 1949) */
+/** Cr_eq = %Cr + %Mo + 0.7·%Nb  (Kotecki & Siewert, WRC-1992) */
 export function creq(c: Composition): number {
-  return c.Cr + c.Mo + 1.5 * c.Si + 0.5 * c.Nb
+  return c.Cr + c.Mo + 0.7 * c.Nb
 }
 
-/** Ni_eq = %Ni + 30·%C + 0.5·%Mn  (Schaeffler 1949) */
+/** Ni_eq = %Ni + 35·%C + 20·%N + 0.25·%Cu  (Kotecki & Siewert, WRC-1992) */
 export function nieq(c: Composition): number {
-  return c.Ni + 30 * c.C + 0.5 * c.Mn
+  return c.Ni + 35 * c.C + 20 * c.N + 0.25 * c.Cu
 }
 
 /**
@@ -27,6 +34,8 @@ export function mixComposition(a: Composition, b: Composition, t: number): Compo
     Ni: lerp(a.Ni, b.Ni),
     Mo: lerp(a.Mo, b.Mo),
     Nb: lerp(a.Nb, b.Nb),
+    N: lerp(a.N, b.N),
+    Cu: lerp(a.Cu, b.Cu),
   }
 }
 
@@ -71,7 +80,7 @@ export function isInsideDiagram(x: number, y: number): boolean {
 }
 
 /** Ray-casting point-in-polygon, counting points on an edge as inside. */
-function inPolygon(x: number, y: number, poly: Point[]): boolean {
+export function inPolygon(x: number, y: number, poly: Point[]): boolean {
   const eps = 1e-9
   let inside = false
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -88,55 +97,81 @@ function inPolygon(x: number, y: number, poly: Point[]): boolean {
   return inside
 }
 
-/** Returns the phase field containing (Cr_eq, Ni_eq), or null outside the diagram. */
-export function classifyPoint(x: number, y: number): Region | null {
+/** Returns the solidification mode containing (Cr_eq, Ni_eq), or null outside the diagram. */
+export function classifyPoint(x: number, y: number): Mode | null {
   if (!isInsideDiagram(x, y)) return null
-  for (const region of REGIONS) {
-    if (inPolygon(x, y, region.polygon)) return region
+  for (const mode of MODES) {
+    if (inPolygon(x, y, mode.polygon)) return mode
   }
   return null
 }
 
-function lineYat(line: { start: Point; end: Point }, x: number): number {
-  const [x1, y1] = line.start
-  const [x2, y2] = line.end
-  return y1 + ((y2 - y1) * (x - x1)) / (x2 - x1)
+/**
+ * Signed perpendicular distance from (x, y) to a polyline oriented with
+ * increasing Creq. Positive = the low-FN side (above-left of the line).
+ */
+function signedDistance(x: number, y: number, pts: Point[]): number {
+  let best = Infinity
+  let bestSigned = Infinity
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [ax, ay] = pts[i]
+    const [bx, by] = pts[i + 1]
+    const vx = bx - ax
+    const vy = by - ay
+    const len2 = vx * vx + vy * vy
+    let t = ((x - ax) * vx + (y - ay) * vy) / len2
+    t = Math.max(0, Math.min(1, t))
+    const qx = ax + t * vx
+    const qy = ay + t * vy
+    const d = Math.hypot(x - qx, y - qy)
+    if (d < best) {
+      best = d
+      const cross = vx * (y - ay) - vy * (x - ax)
+      bestSigned = cross > 0 ? d : -d
+    }
+  }
+  return bestSigned
+}
+
+/**
+ * Interpolated Ferrite Number.
+ * - Inside the iso-FN fan: signed-perpendicular-distance interpolation
+ *   between the two bracketing iso-FN lines (handles the non-parallel fan
+ *   and the nonuniform FN steps 0,2,…,30,35,…,100).
+ * - In the fully austenitic A region: 0 by definition.
+ * - Elsewhere (outside the drawn lines): null — the paper warns that
+ *   extending the lines "could result in erroneous predictions".
+ */
+export function estimateFN(x: number, y: number): number | null {
+  if (inPolygon(x, y, FN_VALID_POLYGON)) {
+    const ds = FN_LINES.map((l) => signedDistance(x, y, l.points))
+    for (let i = 0; i < FN_LINES.length - 1; i++) {
+      if (ds[i] <= 0 && ds[i + 1] >= 0) {
+        const a = Math.abs(ds[i])
+        const b = Math.abs(ds[i + 1])
+        return FN_LINES[i].fn + (a / (a + b)) * (FN_LINES[i + 1].fn - FN_LINES[i].fn)
+      }
+    }
+    // numerically on the outermost lines
+    if (ds[0] > 0) return 0
+    if (ds[ds.length - 1] < 0) return 100
+    return null
+  }
+  const mode = classifyPoint(x, y)
+  if (mode?.id === 'A') return 0
+  return null
 }
 
 /** Everything the UI needs to know about one composition's diagram point. */
 export interface PointAnalysis {
   x: number
   y: number
-  region: Region | null
-  ferritePct: number | null
+  mode: Mode | null
+  fn: number | null
 }
 
 export function analyzeComposition(c: Composition): PointAnalysis {
   const x = creq(c)
   const y = nieq(c)
-  return { x, y, region: classifyPoint(x, y), ferritePct: estimateFerrite(x, y) }
-}
-
-/**
- * Estimate ferrite content by interpolating between iso-ferrite lines.
- * Only meaningful in the A+F and A+M+F fields; returns null elsewhere.
- */
-export function estimateFerrite(x: number, y: number): number | null {
-  const region = classifyPoint(x, y)
-  if (!region || (region.id !== 'A_F' && region.id !== 'A_M_F')) return null
-
-  // y-values of all iso-lines at this x, ordered 0% (top) → 100% (bottom)
-  const ys = FERRITE_LINES.map((l) => ({ pct: l.pct, y: lineYat(l, x) }))
-  if (y >= ys[0].y) return 0
-  const last = ys[ys.length - 1]
-  if (y <= last.y) return 100
-  for (let i = 0; i < ys.length - 1; i++) {
-    const hi = ys[i] // lower pct, higher y
-    const lo = ys[i + 1]
-    if (y <= hi.y && y >= lo.y) {
-      const f = (hi.y - y) / (hi.y - lo.y)
-      return hi.pct + f * (lo.pct - hi.pct)
-    }
-  }
-  return null
+  return { x, y, mode: classifyPoint(x, y), fn: estimateFN(x, y) }
 }

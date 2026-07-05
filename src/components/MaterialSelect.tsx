@@ -16,10 +16,10 @@ interface Props {
   allowNone?: boolean
 }
 
-const ELEMENTS = ['C', 'Mn', 'Si', 'Cr', 'Ni', 'Mo', 'Nb'] as const
+const ELEMENTS = ['C', 'Mn', 'Si', 'Cr', 'Ni', 'Mo', 'Nb', 'N', 'Cu'] as const
 
 /** Input caps for custom alloys — generous but keep values physically plausible */
-const MAX: Composition = { C: 2, Mn: 15, Si: 5, Cr: 40, Ni: 40, Mo: 10, Nb: 5 }
+const MAX: Composition = { C: 2, Mn: 15, Si: 5, Cr: 40, Ni: 40, Mo: 10, Nb: 5, N: 0.5, Cu: 5 }
 
 const fmt = (v: number, decimals = 2) =>
   v.toFixed(decimals).replace(/\.?0+$/, '') || '0'

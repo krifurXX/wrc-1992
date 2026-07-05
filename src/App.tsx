@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react'
 import MaterialSelect from './components/MaterialSelect'
 import ResultPanel, { type PassResult } from './components/ResultPanel'
-import SchaefflerDiagram, {
+import WeldControls from './components/WeldControls'
+import WrcDiagram, {
   type DiagramLine,
   type DiagramMarker,
-} from './components/SchaefflerDiagram'
-import WeldControls from './components/WeldControls'
+} from './components/WrcDiagram'
 import { resolveMaterial, type MaterialSelection } from './data/materials'
 import { analyzeComposition, creq, mixComposition, multiPassCompositions, nieq } from './lib/calc'
 import { collectWarnings } from './lib/warnings'
@@ -13,9 +13,12 @@ import { collectWarnings } from './lib/warnings'
 export default function App() {
   const [selA, setSelA] = useState<MaterialSelection>({ kind: 'preset', id: '304' })
   const [selB, setSelB] = useState<MaterialSelection>({ kind: 'preset', id: 'S355' })
-  const [fillerSel, setFillerSel] = useState<MaterialSelection | null>(null)
+  const [fillerSel, setFillerSel] = useState<MaterialSelection | null>({
+    kind: 'preset',
+    id: 'ER309L',
+  })
   const [pctB, setPctB] = useState(50)
-  const [rootDilutionPct, setRootDilutionPct] = useState(40)
+  const [rootDilutionPct, setRootDilutionPct] = useState(30)
   const [fillDilutionPct, setFillDilutionPct] = useState(25)
   const [passes, setPasses] = useState(1)
 
@@ -79,7 +82,7 @@ export default function App() {
         markers.push({ x: p.x, y: p.y, label: '', shape: 'ring', color: '#d9480f' })
       } else {
         // skip the number label when passes crowd together near convergence
-        const crowded = Math.hypot(p.x - prev.x, p.y - prev.y) < 0.4
+        const crowded = Math.hypot(p.x - prev.x, p.y - prev.y) < 0.25
         markers.push({
           x: p.x,
           y: p.y,
@@ -98,20 +101,16 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
       <header className="bg-hv-dark text-white px-6 py-4">
-        <h1 className="text-xl font-bold">Schaeffler diagram — weld metal prediction</h1>
+        <h1 className="text-xl font-bold">WRC-1992 diagram — weld metal ferrite prediction</h1>
         <p className="text-sm text-hv-light mt-0.5">
-          Select base materials (and optionally a filler metal) and see where the weld metal ends
-          up in the diagram
+          Select base materials and a filler metal and read the predicted Ferrite Number and
+          solidification mode of the weld metal
         </p>
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
         <section aria-label="Diagram">
-          <SchaefflerDiagram
-            markers={markers}
-            lines={lines}
-            activeRegionId={final.region?.id ?? null}
-          />
+          <WrcDiagram markers={markers} lines={lines} activeModeId={final.mode?.id ?? null} />
         </section>
 
         <section className="space-y-4" aria-label="Settings and result">
@@ -152,8 +151,9 @@ export default function App() {
       </main>
 
       <footer className="max-w-7xl mx-auto px-6 pb-6 text-xs text-gray-500">
-        Diagram after Schaeffler (1949). Boundary lines digitized from published reproductions
-        (±0.5 units). HV.SE
+        Diagram after Kotecki &amp; Siewert, Welding Journal 71(5), 1992. Iso-FN lines and mode
+        boundaries digitized from Fig. 6 of the original paper and verified against its published
+        examples. HV.SE
       </footer>
     </div>
   )

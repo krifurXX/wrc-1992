@@ -14,6 +14,8 @@ interface Props {
   hasFiller: boolean
 }
 
+const ELEMENTS = ['C', 'Mn', 'Si', 'Cr', 'Ni', 'Mo', 'Nb', 'N', 'Cu'] as const
+
 const fmt = (v: number, d = 2) => v.toFixed(d)
 
 export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
@@ -28,13 +30,14 @@ export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
       </div>
       <div className="px-4 py-3 space-y-3 text-hv-text">
         <p className="text-lg">
-          Phase field:{' '}
+          Solidification mode:{' '}
           <strong className="text-hv-dark">
-            {final.region ? final.region.label : 'Outside the diagram'}
+            {final.mode ? final.mode.label : 'Outside the diagram'}
           </strong>
-          {final.ferritePct !== null && (
+          {final.fn !== null && (
             <span className="block text-sm text-gray-700">
-              Estimated ferrite content: approx. {fmt(Math.round(final.ferritePct * 2) / 2, 1)} %
+              Predicted Ferrite Number: FN ≈ {fmt(final.fn, 1)}
+              <span className="text-gray-500"> (≈ vol-% ferrite at low FN)</span>
             </span>
           )}
         </p>
@@ -51,16 +54,16 @@ export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
           <table className="w-full text-xs">
             <thead>
               <tr className="text-gray-500">
-                {['C', 'Mn', 'Si', 'Cr', 'Ni', 'Mo', 'Nb'].map((el) => (
+                {ELEMENTS.map((el) => (
                   <th key={el} className="font-normal text-right">{el}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               <tr>
-                {(['C', 'Mn', 'Si', 'Cr', 'Ni', 'Mo', 'Nb'] as const).map((el) => (
+                {ELEMENTS.map((el) => (
                   <td key={el} className="text-right tabular-nums">
-                    {fmt(final.composition[el], el === 'C' ? 3 : 2)}
+                    {fmt(final.composition[el], el === 'C' || el === 'N' ? 3 : 2)}
                   </td>
                 ))}
               </tr>
@@ -70,7 +73,7 @@ export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
 
         {passes.length > 1 && (
           <div>
-            <h3 className="text-sm font-bold text-hv-dark mb-1">Per-pass microstructure</h3>
+            <h3 className="text-sm font-bold text-hv-dark mb-1">Per-pass prediction</h3>
             <table className="w-full text-xs">
               <thead>
                 <tr className="text-gray-500">
@@ -81,8 +84,8 @@ export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
                   <th className="font-normal text-right">
                     Ni<sub>eq</sub>
                   </th>
-                  <th className="font-normal text-right">Phase field</th>
-                  <th className="font-normal text-right">Ferrite</th>
+                  <th className="font-normal text-right">Mode</th>
+                  <th className="font-normal text-right">FN</th>
                 </tr>
               </thead>
               <tbody>
@@ -91,9 +94,9 @@ export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
                     <td className="text-left tabular-nums">{p.n}</td>
                     <td className="text-right tabular-nums">{fmt(p.x, 1)}</td>
                     <td className="text-right tabular-nums">{fmt(p.y, 1)}</td>
-                    <td className="text-right">{p.region ? p.region.short : '—'}</td>
+                    <td className="text-right">{p.mode ? p.mode.short : '—'}</td>
                     <td className="text-right tabular-nums">
-                      {p.ferritePct !== null ? `~${fmt(Math.round(p.ferritePct * 2) / 2, 1)} %` : '—'}
+                      {p.fn !== null ? `≈${fmt(p.fn, 1)}` : '—'}
                     </td>
                   </tr>
                 ))}
