@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+@theme {
+  /* Högskolan Väst brand palette */
+  --color-hv-dark: #003b5b;
+  --color-hv-blue: #1380a4;
+  --color-hv-light: #e4f1f8;
+  --color-hv-text: #202020;
+  --font-sans: Arial, Helvetica, sans-serif;
+}
