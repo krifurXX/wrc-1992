@@ -21,10 +21,22 @@ export default function App() {
   const [rootDilutionPct, setRootDilutionPct] = useState(30)
   const [fillDilutionPct, setFillDilutionPct] = useState(25)
   const [passes, setPasses] = useState(1)
+  const [useBuffer, setUseBuffer] = useState(false)
+  const [bufferSel, setBufferSel] = useState<MaterialSelection>({ kind: 'preset', id: 'ER309L' })
+  const [bufferPasses, setBufferPasses] = useState(1)
 
   const materialA = resolveMaterial(selA)
   const materialB = resolveMaterial(selB)
   const filler = fillerSel ? resolveMaterial(fillerSel) : null
+  const bufferMat = resolveMaterial(bufferSel)
+
+  // The final pass must always be the cladding alloy: clamp to 1..passes−1,
+  // derived (never mutating state) so the stored value survives slider round-trips.
+  const effBufferPasses = useBuffer && filler ? Math.min(bufferPasses, passes - 1) : 0
+  const bufferActive = effBufferPasses > 0
+  // C1/C2 naming follows the toggle so panel, diagram and hint text always agree,
+  // even in the passes = 1 state where the buffer has no effect on the model yet
+  const showBuffer = useBuffer && filler !== null
 
   const baseMix = useMemo(
     () => mixComposition(materialA.composition, materialB.composition, pctB / 100),
@@ -39,10 +51,18 @@ export default function App() {
           rootDilutionPct / 100,
           fillDilutionPct / 100,
           passes,
+          bufferActive
+            ? { filler: bufferMat.composition, passes: effBufferPasses }
+            : undefined,
         )
       : [baseMix]
-    return comps.map((c, i) => ({ n: i + 1, composition: c, ...analyzeComposition(c) }))
-  }, [baseMix, filler, rootDilutionPct, fillDilutionPct, passes])
+    return comps.map((c, i) => ({
+      n: i + 1,
+      composition: c,
+      ...(bufferActive ? { fillerLabel: i < effBufferPasses ? 'C1' : 'C2' } : {}),
+      ...analyzeComposition(c),
+    }))
+  }, [baseMix, filler, rootDilutionPct, fillDilutionPct, passes, bufferActive, bufferMat, effBufferPasses])
 
   const final = passResults[passResults.length - 1]
 
@@ -50,7 +70,10 @@ export default function App() {
     [
       { label: 'Material A', material: materialA },
       { label: 'Material B', material: materialB },
-      ...(filler ? [{ label: 'Filler C', material: filler }] : []),
+      ...(bufferActive ? [{ label: 'Buffer filler C1', material: bufferMat }] : []),
+      ...(filler
+        ? [{ label: showBuffer ? 'Cladding filler C2' : 'Filler C', material: filler }]
+        : []),
     ],
     passResults,
   )
@@ -70,9 +93,17 @@ export default function App() {
 
   if (filler) {
     const cPt = { x: creq(filler.composition), y: nieq(filler.composition) }
-    markers.push({ ...cPt, label: 'C', shape: 'diamond', color: '#0f766e' })
+    markers.push({ ...cPt, label: showBuffer ? 'C2' : 'C', shape: 'diamond', color: '#0f766e' })
     markers.push({ ...basePt, label: '', shape: 'dot', color: '#46555f', size: 'small' })
-    lines.push({ x1: basePt.x, y1: basePt.y, x2: cPt.x, y2: cPt.y, color: '#0f766e', dash: '2 3' })
+    if (showBuffer) {
+      const c1Pt = { x: creq(bufferMat.composition), y: nieq(bufferMat.composition) }
+      markers.push({ ...c1Pt, label: 'C1', shape: 'diamond', color: '#0f766e' })
+    }
+    // the dashed guide shows the pass-1 mixing line, which targets the buffer filler when active
+    const guidePt = bufferActive
+      ? { x: creq(bufferMat.composition), y: nieq(bufferMat.composition) }
+      : cPt
+    lines.push({ x1: basePt.x, y1: basePt.y, x2: guidePt.x, y2: guidePt.y, color: '#0f766e', dash: '2 3' })
 
     // Pass path: base mix → pass 1 → … → final weld metal, converging toward C
     let prev = basePt
@@ -127,12 +158,31 @@ export default function App() {
             accentClass="border-l-hv-blue"
           />
           <MaterialSelect
-            label="Filler C"
+            label={showBuffer ? 'Cladding filler C2' : 'Filler C'}
             value={fillerSel}
             onChange={setFillerSel}
             accentClass="border-l-teal-700"
             allowNone
           />
+          {filler && (
+            <label className="flex items-center gap-2 text-sm text-hv-dark px-1">
+              <input
+                type="checkbox"
+                checked={useBuffer}
+                onChange={(e) => setUseBuffer(e.target.checked)}
+                className="accent-teal-700"
+              />
+              Use a different filler for the first layer(s) (buffer)
+            </label>
+          )}
+          {filler && useBuffer && (
+            <MaterialSelect
+              label="Buffer filler C1"
+              value={bufferSel}
+              onChange={(s) => s && setBufferSel(s)}
+              accentClass="border-l-teal-700"
+            />
+          )}
           <WeldControls
             pctB={pctB}
             onPctB={setPctB}
@@ -145,6 +195,9 @@ export default function App() {
             onFillDilution={setFillDilutionPct}
             passes={passes}
             onPasses={setPasses}
+            hasBuffer={showBuffer}
+            bufferPasses={bufferPasses}
+            onBufferPasses={setBufferPasses}
           />
           <ResultPanel passes={passResults} warnings={warnings} hasFiller={filler !== null} />
         </section>

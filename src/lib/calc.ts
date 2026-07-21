@@ -52,11 +52,24 @@ export function weldComposition(
 }
 
 /**
+ * Buffer layer for cladding: passes 1..passes use this filler (e.g. over-alloyed
+ * ER309L) before the run switches to the final cladding alloy.
+ * If passes >= the total pass count, every pass uses the buffer filler —
+ * the UI clamps to 1..totalPasses−1 so the last pass is always the cladding alloy.
+ */
+export interface BufferSpec {
+  filler: Composition
+  passes: number
+}
+
+/**
  * Multi-pass model: the root pass dilutes the filler with the base-metal mix,
  * subsequent passes dilute the filler with the previous pass:
  *   c_1 = (1−D_root)·filler + D_root·baseMix
  *   c_n = (1−D_fill)·filler + D_fill·c_{n−1}   (n ≥ 2)
  * Compositions converge geometrically toward the filler (ratio D_fill per pass).
+ * With `buffer`, passes 1..buffer.passes use buffer.filler instead; the same
+ * dilution rules apply regardless of which filler is active.
  * Returns one composition per pass (length = passes).
  */
 export function multiPassCompositions(
@@ -65,11 +78,14 @@ export function multiPassCompositions(
   rootDilution: number,
   fillDilution: number,
   passes: number,
+  buffer?: BufferSpec,
 ): Composition[] {
   const out: Composition[] = []
   let prev = baseMix
   for (let i = 0; i < passes; i++) {
-    prev = weldComposition(prev, filler, i === 0 ? rootDilution : fillDilution)
+    // pass number n = i + 1, so passes 1..buffer.passes are indices i < buffer.passes
+    const f = buffer && i < buffer.passes ? buffer.filler : filler
+    prev = weldComposition(prev, f, i === 0 ? rootDilution : fillDilution)
     out.push(prev)
   }
   return out

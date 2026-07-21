@@ -88,6 +88,54 @@ describe('mixComposition / weldComposition structure', () => {
   })
 })
 
+describe('multiPassCompositions with a buffer layer', () => {
+  const base = mixComposition(byId('304').composition, byId('S355').composition, 0.5)
+  const cBuffer = byId('ER309L').composition // the classic buffer alloy
+  const cCladding = byId('316L').composition
+
+  it('omitting the buffer param matches the plain five-argument call', () => {
+    expect(multiPassCompositions(base, cCladding, 0.3, 0.25, 4, undefined)).toEqual(
+      multiPassCompositions(base, cCladding, 0.3, 0.25, 4),
+    )
+  })
+
+  it('pass 1 uses the buffer filler with D_root against the base mix', () => {
+    const buffer = { filler: cBuffer, passes: 2 }
+    const [first] = multiPassCompositions(base, cCladding, 0.3, 0.25, 5, buffer)
+    expect(first).toEqual(weldComposition(base, cBuffer, 0.3))
+  })
+
+  it('a buffer pass after the first uses the buffer filler with D_fill against the previous pass', () => {
+    const buffer = { filler: cBuffer, passes: 2 }
+    const comps = multiPassCompositions(base, cCladding, 0.3, 0.25, 5, buffer)
+    expect(comps[1]).toEqual(weldComposition(comps[0], cBuffer, 0.25))
+  })
+
+  it('the switch pass uses the cladding filler against the last buffer pass', () => {
+    const buffer = { filler: cBuffer, passes: 2 }
+    const comps = multiPassCompositions(base, cCladding, 0.3, 0.25, 5, buffer)
+    expect(comps[2]).toEqual(weldComposition(comps[1], cCladding, 0.25))
+  })
+
+  it('converges toward the cladding filler with ratio D_fill from the switch onward', () => {
+    const Dfill = 0.25
+    const buffer = { filler: cBuffer, passes: 2 }
+    const comps = multiPassCompositions(base, cCladding, 0.3, Dfill, 6, buffer)
+    const dist = (c: Composition) =>
+      Math.hypot(creq(c) - creq(cCladding), nieq(c) - nieq(cCladding))
+    for (let i = buffer.passes; i < comps.length; i++) {
+      expect(dist(comps[i]) / dist(comps[i - 1])).toBeCloseTo(Dfill, 8)
+    }
+  })
+
+  it('buffer.passes = passes makes the buffer the sole filler', () => {
+    const buffer = { filler: cBuffer, passes: 3 }
+    expect(multiPassCompositions(base, cCladding, 0.3, 0.25, 3, buffer)).toEqual(
+      multiPassCompositions(base, cBuffer, 0.3, 0.25, 3),
+    )
+  })
+})
+
 describe('resolveMaterial', () => {
   it('preset returns the MATERIALS object', () => {
     expect(resolveMaterial({ kind: 'preset', id: '2205' })).toBe(byId('2205'))

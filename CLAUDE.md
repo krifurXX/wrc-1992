@@ -5,7 +5,12 @@ Interaktiv undervisningsapp (Högskolan Väst), systerapp till `../scheffler-v2`
 (A/AF/FA/F) i rostfritt svetsgods enligt WRC-1992-diagrammet (Kotecki &
 Siewert, Welding Journal 71(5) 1992, s. 171s–178s). Samma svetsmodell som
 systerappen: grundmaterial A + B (preset eller egen sammansättning), valfritt
-tillsatsmaterial C, root-/fillpass-dilution, flersträngssvetsning.
+tillsatsmaterial C, root-/fillpass-dilution, flersträngssvetsning, samt
+buffertskikt (valfritt, känd claddingpraxis): sträng 1..N_buffer använder
+buffertfiller C1 (default ER309L), därefter claddinglegering C2 — samma
+utspädningsregler oavsett filler. UI klampar N_buffer till 1..antal strängar−1
+(sista strängen alltid C2); `multiPassCompositions` själv är permissiv
+(buffer.passes ≥ passes ⇒ enbart buffert).
 
 Formler: Creq = Cr + Mo + 0,7·Nb; Nieq = Ni + 35·C + 20·N + 0,25·Cu.
 Till skillnad från Schaeffler ingår kväve och koppar i modellen.
