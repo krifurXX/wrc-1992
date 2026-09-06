@@ -33,8 +33,9 @@ src/
                        multiPassCompositions, classifyPoint (mod-polygoner),
                        estimateFN (signerad vinkelrät avståndsinterpolation
                        mellan angränsande iso-FN-linjer, gated av FN_VALID_POLYGON)
-  lib/warnings.ts      WRC-giltighetsgränser (Mn≤10, Mo≤3.5, N≤0.2, Si≤1),
-                       FN>50-notis, martensithörn, utanför-axlar/utanför-solfjäder
+  lib/warnings.ts      WRC-giltighetsgränser ur Siewert et al. 1988 (Mn≤10, Mo≤3, N≤0.2,
+                       Si≤1), FN>18-notis (±9 FN), utanför-axlar/utanför-solfjäder (inkl.
+                       martensitanm.), disclaimer + referenser (1992, 1988). Källgranskat sep 2026.
   lib/wrc.test.ts      Geometrikontraktet: 12 ankare ur originalartikeln
                        (Exempel 1-2 + Tabell 1), domängränser, mod-täckning
   lib/weld.test.ts     Dilutionspipelinen end-to-end mot artikelns exempel

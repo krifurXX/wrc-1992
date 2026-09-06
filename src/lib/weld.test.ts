@@ -148,7 +148,7 @@ describe('resolveMaterial', () => {
   })
 })
 
-describe('collectWarnings — WRC-1992 validity rules', () => {
+describe('collectWarnings — WRC-1992 validity rules (Siewert et al. 1988; Kotecki & Siewert 1992)', () => {
   it('flags N above the 0.2 % database limit', () => {
     const highN = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, N: 0.3 } })
     const w = collectWarnings([{ label: 'Material A', material: highN }], [{ x: 20, y: 12 }])
@@ -161,26 +161,41 @@ describe('collectWarnings — WRC-1992 validity rules', () => {
     expect(w.some((x) => x.id === 'limit-Mn-Filler C')).toBe(true)
   })
 
+  it('uses the 3 wt-% Mo limit stated in the 1988 conclusions (not 3.5)', () => {
+    const mo32 = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, Mo: 3.2 } })
+    const w = collectWarnings([{ label: 'Material A', material: mo32 }], [{ x: 20, y: 12 }])
+    expect(w.some((x) => x.id === 'limit-Mo-Material A')).toBe(true)
+    const mo28 = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, Mo: 2.8 } })
+    expect(collectWarnings([{ label: 'Material A', material: mo28 }], [{ x: 20, y: 12 }])).toEqual([])
+  })
+
   it('describes off-axes base metals as normal, not as errors', () => {
     const s355 = byId('S355')
     const w = collectWarnings([{ label: 'Material B', material: s355 }], [{ x: 20, y: 13 }])
     const msg = w.find((x) => x.id === 'outside-Material B')
     expect(msg).toBeDefined()
-    expect(msg!.text).toContain('normal for unalloyed steels')
+    expect(msg!.text).toContain('normal for unalloyed base metals')
   })
 
-  it('adds the high-FN accuracy note above FN 50', () => {
+  it('adds the accuracy note above FN 18 (±9 FN per 1988 Table 4)', () => {
     const w = collectWarnings([], [{ x: 25.95, y: 12.03 }]) // ≈56 FN anchor point
-    expect(w.some((x) => x.id === 'high-fn')).toBe(true)
+    const note = w.find((x) => x.id === 'high-fn')
+    expect(note).toBeDefined()
+    expect(note!.text).toContain('±9 FN')
+    // a low-FN point (Example 2 root pass, ≈4 FN) gets no note
+    expect(collectWarnings([], [{ x: 20.04, y: 13.39 }]).some((x) => x.id === 'high-fn')).toBe(false)
   })
 
-  it('warns when the weld point is outside the iso-FN fan', () => {
+  it('warns when the weld point is outside the iso-FN fan, mentioning martensite', () => {
     const w = collectWarnings([], [{ x: 28.0, y: 16.9 }])
-    expect(w.some((x) => x.id === 'outside-fan')).toBe(true)
+    const fan = w.find((x) => x.id === 'outside-fan')
+    expect(fan).toBeDefined()
+    expect(fan!.text).toContain('martensite')
+    expect(w.some((x) => x.id === 'martensite-risk')).toBe(false)
   })
 
-  it('warns about martensite in the lower-left corner', () => {
-    const w = collectWarnings([], [{ x: 18, y: 10 }])
-    expect(w.some((x) => x.id === 'martensite-risk')).toBe(true)
+  it('has no separate lower-left corner heuristic', () => {
+    const ids = collectWarnings([], [{ x: 18, y: 10 }]).map((x) => x.id)
+    expect(ids).not.toContain('martensite-risk')
   })
 })
