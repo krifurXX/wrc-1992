@@ -39,7 +39,6 @@ export default function ResultPanel({ passes, warnings, hasFiller }: Props) {
           {final.fn !== null && (
             <span className="block text-sm text-gray-700">
               Predicted Ferrite Number: FN ≈ {fmt(final.fn, 1)}
-              <span className="text-gray-500"> (≈ vol-% ferrite at low FN)</span>
             </span>
           )}
         </p>

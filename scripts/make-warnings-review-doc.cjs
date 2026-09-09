@@ -160,6 +160,7 @@ const content = [
     L('**W3: the martensite sentence removed**; no reference to martensite or other diagrams anywhere in the app.', '**W3: martensitmeningen borttagen**; ingen hänvisning till martensit eller andra diagram någonstans i appen.'),
     L('**High-FN warning replaced by a standing accuracy note** (84 % within ±2.5 FN below 18 FN; 70 % within ±9 FN above) with the 1988 reference.', '**FN-varningen ersatt av en fast noggrannhetsnotis** (84 % inom ±2,5 FN under 18 FN; 70 % inom ±9 FN över) med 1988-referensen.'),
     L('**Disclaimer replaced by the reviewer’s text**; the FN-versus-volume-% explanation dropped.', '**Ansvarsfriskrivningen ersatt av granskarens text**; förklaringen av FN kontra volymprocent struken.'),
+    L('**Result panel: the parenthetical “(≈ vol-% ferrite at low FN)” after the predicted FN removed** at the reviewer’s request; the panel now states the FN only.', '**Resultatpanelen: parentesen ”(≈ vol-% ferrite at low FN)” efter det predikterade FN borttagen** på granskarens begäran; panelen anger nu bara FN.'),
   ] },
   { h2: L('4.2 First revision, 6 September 2026 (source check)', '4.2 Första revisionen, 6 september 2026 (källkontroll)') },
   { p: L('The state before the first revision and the reason for each change:', 'Läget före den första revisionen och skälet till varje ändring:') },
