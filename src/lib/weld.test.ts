@@ -13,7 +13,7 @@ import {
   nieq,
   weldComposition,
 } from './calc'
-import { collectWarnings } from './warnings'
+import { collectWarnings, DISCLAIMER, DISCLAIMER_NOTES, PRIMARY_REFERENCES } from './warnings'
 
 const byId = (id: string) => {
   const m = MATERIALS.find((x) => x.id === id)
@@ -148,54 +148,39 @@ describe('resolveMaterial', () => {
   })
 })
 
-describe('collectWarnings — WRC-1992 validity rules (Siewert et al. 1988; Kotecki & Siewert 1992)', () => {
-  it('flags N above the 0.2 % database limit', () => {
-    const highN = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, N: 0.3 } })
-    const w = collectWarnings([{ label: 'Material A', material: highN }], [{ x: 20, y: 12 }])
-    expect(w.some((x) => x.id === 'limit-N-Material A')).toBe(true)
+describe('collectWarnings — after expert review (September 2026)', () => {
+  it('raises no composition-limit or FN-accuracy warnings (they are standing notes)', () => {
+    const highN = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, N: 0.3, Mo: 4, Mn: 12 } })
+    const w = collectWarnings([{ label: 'Material A', material: highN }], [{ x: 25.95, y: 12.03 }]) // ≈56 FN
+    expect(w).toEqual([])
+    expect(DISCLAIMER_NOTES.join(' ')).toContain('±9 FN')
+    expect(DISCLAIMER_NOTES.join(' ')).toContain('3 % Mo')
   })
 
-  it('flags Mn above 10 %', () => {
-    const highMn = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, Mn: 12 } })
-    const w = collectWarnings([{ label: 'Filler C', material: highMn }], [{ x: 20, y: 12 }])
-    expect(w.some((x) => x.id === 'limit-Mn-Filler C')).toBe(true)
-  })
-
-  it('uses the 3 wt-% Mo limit stated in the 1988 conclusions (not 3.5)', () => {
-    const mo32 = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, Mo: 3.2 } })
-    const w = collectWarnings([{ label: 'Material A', material: mo32 }], [{ x: 20, y: 12 }])
-    expect(w.some((x) => x.id === 'limit-Mo-Material A')).toBe(true)
-    const mo28 = resolveMaterial({ kind: 'custom', composition: { ...ZERO, Cr: 20, Ni: 10, Mo: 2.8 } })
-    expect(collectWarnings([{ label: 'Material A', material: mo28 }], [{ x: 20, y: 12 }])).toEqual([])
-  })
-
-  it('describes off-axes base metals as normal, not as errors', () => {
+  it('raises one generic note when any base metal lies outside the axes', () => {
     const s355 = byId('S355')
-    const w = collectWarnings([{ label: 'Material B', material: s355 }], [{ x: 20, y: 13 }])
-    const msg = w.find((x) => x.id === 'outside-Material B')
-    expect(msg).toBeDefined()
-    expect(msg!.text).toContain('normal for unalloyed base metals')
+    const w = collectWarnings(
+      [{ label: 'Material A', material: s355 }, { label: 'Material B', material: s355 }],
+      [{ x: 20, y: 13 }],
+    )
+    expect(w.map((x) => x.id)).toEqual(['outside-base'])
+    expect(w[0].text).toBe('Unalloyed base metals lie outside the diagram axes. The mixing line remains valid as long as the weld metal point lies on the diagram.')
   })
 
-  it('adds the accuracy note above FN 18 (±9 FN per 1988 Table 4)', () => {
-    const w = collectWarnings([], [{ x: 25.95, y: 12.03 }]) // ≈56 FN anchor point
-    const note = w.find((x) => x.id === 'high-fn')
-    expect(note).toBeDefined()
-    expect(note!.text).toContain('±9 FN')
-    // a low-FN point (Example 2 root pass, ≈4 FN) gets no note
-    expect(collectWarnings([], [{ x: 20.04, y: 13.39 }]).some((x) => x.id === 'high-fn')).toBe(false)
-  })
-
-  it('warns when the weld point is outside the iso-FN fan, mentioning martensite', () => {
+  it('warns when the weld point is outside the iso-FN fan, without mentioning martensite or other diagrams', () => {
     const w = collectWarnings([], [{ x: 28.0, y: 16.9 }])
     const fan = w.find((x) => x.id === 'outside-fan')
     expect(fan).toBeDefined()
-    expect(fan!.text).toContain('martensite')
-    expect(w.some((x) => x.id === 'martensite-risk')).toBe(false)
+    expect(fan!.text).not.toMatch(/martensite|Schaeffler/i)
   })
 
-  it('has no separate lower-left corner heuristic', () => {
-    const ids = collectWarnings([], [{ x: 18, y: 10 }]).map((x) => x.id)
-    expect(ids).not.toContain('martensite-risk')
+  it('reports final and intermediate points outside the axes separately', () => {
+    expect(collectWarnings([], [{ x: 10, y: 10 }, { x: 45, y: 10 }]).map((x) => x.id)).toEqual(['outside-weld', 'outside-pass'])
+    expect(collectWarnings([], [{ x: 45, y: 10 }, { x: 20, y: 13 }]).map((x) => x.id)).toEqual(['outside-pass'])
+  })
+
+  it('disclaimer uses the reviewer wording and cites both primary papers', () => {
+    expect(DISCLAIMER).toBe('WRC-1992 predicts Ferrite Number (FN). The prediction applies to weld metal at arc-welding cooling rates and is only valid inside the drawn iso-FN lines. The prediction is subject to the limitations and assumptions of the original WRC-1992 research.')
+    expect(PRIMARY_REFERENCES).toHaveLength(2)
   })
 })

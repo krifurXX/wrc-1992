@@ -12,62 +12,34 @@ export interface LabeledMaterial {
 }
 
 /**
- * Validity rules for the WRC-1992 prediction, taken from the original research:
- * Siewert, McCowan & Olson (1988), Conclusions: "The diagram is applicable for
- * Mn contents to 10 wt-%, Mo contents to 3 wt-%, N contents to 0.2 wt-% and Si
- * contents to 1 wt-%." Accuracy above 18 FN: Table 4 of the same paper.
- * Martensite and line extension: Kotecki & Siewert (1992), p. 173-s and Fig. 6.
+ * Only geometric checks are raised as warnings. Composition limits and
+ * accuracy figures from the original research are shown as standing notes
+ * (DISCLAIMER_NOTES) instead, as agreed in the expert review (September 2026).
  */
-const LIMITS: { el: 'Mn' | 'Mo' | 'N' | 'Si'; max: number }[] = [
-  { el: 'Mn', max: 10 },
-  { el: 'Mo', max: 3 },
-  { el: 'N', max: 0.2 },
-  { el: 'Si', max: 1 },
-]
-
-/** Above this FN the 1988 database shows ±9 FN scatter instead of ±2.5 FN. */
-const HIGH_FN = 18
-
 export function collectWarnings(
   inputs: LabeledMaterial[],
   passPoints: { x: number; y: number }[],
 ): Warning[] {
   const warnings: Warning[] = []
 
-  for (const { material: m, label } of inputs) {
-    for (const { el, max } of LIMITS) {
-      if (m.composition[el] > max) {
-        warnings.push({
-          id: `limit-${el}-${label}`,
-          text: `${label} (${m.designation}) has ${m.composition[el].toFixed(2)} % ${el}, above the ${max} % limit of the WRC-1992 database — the FN prediction is not reliable.`,
-        })
-      }
-    }
-    if (!isInsideDiagram(creq(m.composition), nieq(m.composition))) {
-      warnings.push({
-        id: `outside-${label}`,
-        text: `${label} (${m.designation}) lies outside the diagram axes. That is normal for unalloyed base metals — the mixing line remains valid as long as the weld metal point lands on the diagram.`,
-      })
-    }
+  if (inputs.some(({ material: m }) => !isInsideDiagram(creq(m.composition), nieq(m.composition)))) {
+    warnings.push({
+      id: 'outside-base',
+      text: 'Unalloyed base metals lie outside the diagram axes. The mixing line remains valid as long as the weld metal point lies on the diagram.',
+    })
   }
 
   const final = passPoints[passPoints.length - 1]
   if (final) {
-    const fn = estimateFN(final.x, final.y)
     if (!isInsideDiagram(final.x, final.y)) {
       warnings.push({
         id: 'outside-weld',
         text: 'The weld metal point lies outside the diagram area and no FN prediction is possible.',
       })
-    } else if (fn === null) {
+    } else if (estimateFN(final.x, final.y) === null) {
       warnings.push({
         id: 'outside-fan',
-        text: 'The weld metal point lies outside the region covered by the iso-FN lines; extending the lines could give erroneous predictions. Below the lower FN lines martensite may form, which the WRC-1992 diagram does not show.',
-      })
-    } else if (fn > HIGH_FN) {
-      warnings.push({
-        id: 'high-fn',
-        text: `Predicted FN ≈ ${Math.round(fn)} is above ${HIGH_FN}, where the accuracy of the WRC-1992 prediction drops from about ±2.5 FN to about ±9 FN.`,
+        text: 'The weld metal point lies outside the region covered by the iso-FN lines; extending the lines could give erroneous predictions.',
       })
     }
   }
@@ -81,9 +53,15 @@ export function collectWarnings(
   return warnings
 }
 
-/** Always shown below the result. */
+/** Always shown below the result. Wording by the expert reviewer (September 2026). */
 export const DISCLAIMER =
-  'WRC-1992 predicts Ferrite Number (FN), a magnetically defined scale — not volume-% ferrite; the two agree only at low FN (100 FN corresponds to roughly 65 vol-% ferrite). The prediction applies to weld metal at arc-welding cooling rates and is only valid inside the drawn iso-FN lines. The prediction is subject to the limitations and assumptions of the original WRC-1992 research.'
+  'WRC-1992 predicts Ferrite Number (FN). The prediction applies to weld metal at arc-welding cooling rates and is only valid inside the drawn iso-FN lines. The prediction is subject to the limitations and assumptions of the original WRC-1992 research.'
+
+/** Standing notes from the original research, always shown after DISCLAIMER. */
+export const DISCLAIMER_NOTES = [
+  'Accuracy of the WRC-1992 prediction (Siewert, McCowan & Olson 1988): below 18 FN, 84 % of predictions fall within ±2.5 FN; above 18 FN, 70 % fall within ±9 FN.',
+  'The prediction is less accurate above 10 % Mn, 3 % Mo, 0.2 % N or 1 % Si (Siewert, McCowan & Olson 1988).',
+]
 
 /** Primary sources, shown with the disclaimer. */
 export const PRIMARY_REFERENCES = [
