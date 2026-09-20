@@ -102,3 +102,8 @@ B fyrkant, C/C1/C2 romb; ritordning via markerLayer; material utanför axlarna =
 brickorna, så den syns som en ring runt A i enmaterialsläget. Material B är mörk magenta `#8a1c5a`
 (token `--color-mat-b`, klass `border-l-mat-b` på B-panelen) – en diagramdatafärg som medvetet
 ligger utanför HV-paletten, eftersom HV-blått försvann mot austenitfältet. Beslutat 2026-09-20.
+
+## Disclaimer (2026-09-20)
+
+Disclaimern anger att diagrammet bygger på experimentdata från bågsvetsning (ersätter "arc-welding
+cooling rates"; ingen uppräkning av andra processer), och `LIABILITY` visas sist under referenserna.

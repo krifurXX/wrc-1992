@@ -55,7 +55,7 @@ export function collectWarnings(
 
 /** Always shown below the result. Wording by the expert reviewer (September 2026). */
 export const DISCLAIMER =
-  'WRC-1992 predicts Ferrite Number (FN). The prediction applies to weld metal at arc-welding cooling rates and is only valid inside the drawn iso-FN lines. The prediction is subject to the limitations and assumptions of the original WRC-1992 research.'
+  'WRC-1992 predicts Ferrite Number (FN). The diagram was developed from experimental data from arc-welding processes, and the prediction is only valid inside the drawn iso-FN lines. The prediction is subject to the limitations and assumptions of the original WRC-1992 research.'
 
 /** Standing notes from the original research, always shown after DISCLAIMER. */
 export const DISCLAIMER_NOTES = [
@@ -68,3 +68,7 @@ export const PRIMARY_REFERENCES = [
   'Kotecki, D. J. & Siewert, T. A. (1992). WRC-1992 constitution diagram for stainless steel weld metals: a modification of the WRC-1988 diagram. Welding Journal 71(5), 171-s–178-s.',
   'Siewert, T. A., McCowan, C. N. & Olson, D. L. (1988). Ferrite Number prediction to 100 FN in stainless steel weld metal. Welding Journal 67(12), 289-s–298-s.',
 ]
+
+/** Shown last, below the references. Wording agreed with the expert reviewer (September 2026). */
+export const LIABILITY =
+  'This app is an interactive digital version of the original published diagram, intended for education. No liability or responsibility is accepted for the predictions.'
