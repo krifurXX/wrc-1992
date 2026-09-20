@@ -91,7 +91,7 @@ export default function App() {
   const markers: DiagramMarker[] = [{ ...aPt, label: 'A', shape: 'circle', color: '#003b5b' }]
   const lines: DiagramLine[] = []
   if (!single) {
-    markers.push({ ...bPt, label: 'B', shape: 'square', color: '#1380a4' })
+    markers.push({ ...bPt, label: 'B', shape: 'square', color: '#8a1c5a' })
     lines.push({ x1: aPt.x, y1: aPt.y, x2: bPt.x, y2: bPt.y, color: '#003b5b', dash: '2 3' })
   }
 
@@ -160,7 +160,7 @@ export default function App() {
             label="Material B"
             value={selB}
             onChange={(s) => s && setSelB(s)}
-            accentClass="border-l-hv-blue"
+            accentClass="border-l-mat-b"
           />
           {/* Buffer is deposited first, so its toggle and panel come before the (cladding) filler.
               The toggle is always rendered — disabled without a filler — so panels do not jump. */}

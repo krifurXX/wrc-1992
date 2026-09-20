@@ -82,6 +82,10 @@ function labelT(i: number): number {
   return [0.72, 0.55, 0.4][i % 3]
 }
 
+/** Draw order: 0 = small dots, 1 = rings, 2 = lettered material badges (always on top). */
+const markerLayer = (m: DiagramMarker): number =>
+  m.shape === 'ring' ? 1 : m.size !== 'small' && m.label && m.shape !== 'dot' ? 2 : 0
+
 export default function WrcDiagram({ markers, lines, activeModeId }: Props) {
   const gridX = []
   for (let x = AXIS.crMin; x <= AXIS.crMax; x += 1) gridX.push(x)
@@ -240,72 +244,118 @@ export default function WrcDiagram({ markers, lines, activeModeId }: Props) {
         )
       })}
 
-      {/* scene markers; out-of-range markers become hollow edge indicators */}
-      {markers.map((m, i) => {
-        const outside = !inAxis(m.x, m.y)
-        const cxu = Math.min(AXIS.crMax - 0.3, Math.max(AXIS.crMin + 0.3, m.x))
-        const cyu = Math.min(AXIS.niMax - 0.3, Math.max(AXIS.niMin + 0.3, m.y))
-        const cx = px(outside ? cxu : m.x)
-        const cy = py(outside ? cyu : m.y)
-        const small = m.size === 'small'
-        const fill = outside ? 'none' : m.color
-        const strokeProps = outside ? { stroke: m.color, strokeWidth: 2 } : {}
-        return (
-          <g key={`sm${i}`}>
-            {m.shape === 'circle' && <circle cx={cx} cy={cy} r={small ? 3 : 6} fill={fill} {...strokeProps} />}
-            {m.shape === 'square' && (
-              <rect x={cx - (small ? 3 : 5.5)} y={cy - (small ? 3 : 5.5)} width={small ? 6 : 11} height={small ? 6 : 11} fill={fill} {...strokeProps} />
-            )}
-            {m.shape === 'diamond' && (
-              <rect
-                x={cx - (small ? 3 : 5.5)}
-                y={cy - (small ? 3 : 5.5)}
-                width={small ? 6 : 11}
-                height={small ? 6 : 11}
-                fill={fill}
-                {...strokeProps}
-                transform={`rotate(45 ${cx} ${cy})`}
-              />
-            )}
-            {m.shape === 'ring' && (
-              <>
-                <circle cx={cx} cy={cy} r={8} fill="none" stroke={m.color} strokeWidth={3} />
-                {!outside && <circle cx={cx} cy={cy} r={2.5} fill={m.color} />}
-              </>
-            )}
-            {m.shape === 'dot' && <circle cx={cx} cy={cy} r={small ? 3 : 4} fill={fill} {...strokeProps} />}
-            {outside &&
-              (() => {
-                const ang = Math.atan2(py(m.y) - cy, px(m.x) - cx)
-                const ax = cx + 14 * Math.cos(ang)
-                const ay = cy + 14 * Math.sin(ang)
-                return (
+      {/* scene markers, drawn in layers: small dots, then rings, then lettered badges on top */}
+      {[...markers]
+        .map((m, i) => ({ m, i }))
+        .sort((a, b) => markerLayer(a.m) - markerLayer(b.m) || a.i - b.i)
+        .map(({ m, i }) => {
+          const outside = !inAxis(m.x, m.y)
+          const cx = px(outside ? Math.min(AXIS.crMax - 0.3, Math.max(AXIS.crMin + 0.3, m.x)) : m.x)
+          const cy = py(outside ? Math.min(AXIS.niMax - 0.3, Math.max(AXIS.niMin + 0.3, m.y)) : m.y)
+          const small = m.size === 'small'
+          const badge = markerLayer(m) === 2
+          if (badge) {
+            // hollow (white) badge marks a point that is clamped to the diagram edge
+            const fill = outside ? '#fff' : m.color
+            const ink = outside ? m.color : '#fff'
+            const stroke = outside ? m.color : '#fff'
+            const ang = outside ? Math.atan2(py(m.y) - cy, px(m.x) - cx) : 0
+            return (
+              <g key={`sm${i}`}>
+                {outside && (
                   <>
-                    <line x1={cx} y1={cy} x2={ax} y2={ay} stroke={m.color} strokeWidth={2} />
+                    <line
+                      x1={cx + 14 * Math.cos(ang)}
+                      y1={cy + 14 * Math.sin(ang)}
+                      x2={cx + 26 * Math.cos(ang)}
+                      y2={cy + 26 * Math.sin(ang)}
+                      stroke={m.color}
+                      strokeWidth={2}
+                    />
                     <polygon
-                      points={`${ax},${ay} ${ax - 7 * Math.cos(ang - 0.45)},${ay - 7 * Math.sin(ang - 0.45)} ${ax - 7 * Math.cos(ang + 0.45)},${ay - 7 * Math.sin(ang + 0.45)}`}
+                      points={`${cx + 26 * Math.cos(ang)},${cy + 26 * Math.sin(ang)} ${cx + 26 * Math.cos(ang) - 7 * Math.cos(ang - 0.45)},${cy + 26 * Math.sin(ang) - 7 * Math.sin(ang - 0.45)} ${cx + 26 * Math.cos(ang) - 7 * Math.cos(ang + 0.45)},${cy + 26 * Math.sin(ang) - 7 * Math.sin(ang + 0.45)}`}
                       fill={m.color}
                     />
                   </>
-                )
-              })()}
-            {m.label && (
-              <text
-                x={cx + (small ? 6 : 10)}
-                y={cy - (small ? 5 : 9)}
-                fontSize={small ? 10 : 13}
-                fontWeight={700}
-                fill={m.color}
-                stroke="#fff"
-                strokeWidth={3}
-                paintOrder="stroke"
-              >
-                {outside ? `${m.label} (${m.x.toFixed(1)}, ${m.y.toFixed(1)})` : m.label}
-              </text>
-            )}
-          </g>
-        )
-      })}
+                )}
+                {m.shape === 'circle' && <circle cx={cx} cy={cy} r={10.5} fill={fill} stroke={stroke} strokeWidth={2} />}
+                {m.shape === 'square' && (
+                  <rect x={cx - 10} y={cy - 10} width={20} height={20} fill={fill} stroke={stroke} strokeWidth={2} />
+                )}
+                {m.shape === 'diamond' && (
+                  <rect
+                    x={cx - 9}
+                    y={cy - 9}
+                    width={18}
+                    height={18}
+                    fill={fill}
+                    stroke={stroke}
+                    strokeWidth={2}
+                    transform={`rotate(45 ${cx} ${cy})`}
+                  />
+                )}
+                <text
+                  x={cx}
+                  y={cy + (m.label.length > 1 ? 4 : 4.5)}
+                  fontSize={m.label.length > 1 ? 11 : 13}
+                  fontWeight={700}
+                  fill={ink}
+                  textAnchor="middle"
+                >
+                  {m.label}
+                </text>
+                {outside && (
+                  <text
+                    x={cx + 16}
+                    y={cy - 12}
+                    fontSize={12}
+                    fontWeight={700}
+                    fill={m.color}
+                    stroke="#fff"
+                    strokeWidth={3}
+                    paintOrder="stroke"
+                  >
+                    ({m.x.toFixed(1)}, {m.y.toFixed(1)})
+                  </text>
+                )}
+              </g>
+            )
+          }
+          return (
+            <g key={`sm${i}`}>
+              {m.shape === 'ring' ? (
+                <>
+                  <circle cx={cx} cy={cy} r={13} fill="none" stroke="#fff" strokeWidth={6} />
+                  <circle cx={cx} cy={cy} r={13} fill="none" stroke={m.color} strokeWidth={3} />
+                  {!outside && <circle cx={cx} cy={cy} r={2.5} fill={m.color} />}
+                </>
+              ) : (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={small ? 3.5 : 5}
+                  fill={outside ? '#fff' : m.color}
+                  stroke={outside ? m.color : '#fff'}
+                  strokeWidth={1.5}
+                />
+              )}
+              {m.label && (
+                <text
+                  x={cx + 7}
+                  y={cy - 6}
+                  fontSize={11}
+                  fontWeight={700}
+                  fill={m.color}
+                  stroke="#fff"
+                  strokeWidth={3}
+                  paintOrder="stroke"
+                >
+                  {m.label}
+                </text>
+              )}
+            </g>
+          )
+        })}
     </svg>
   )
 }

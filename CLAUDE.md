@@ -94,3 +94,11 @@ utelämnar B-markören, linjen A–B och Material B ur varningskontrollen. Inget
 Inställningsspalten: Material A → Material B → buffert-kryssruta → Buffer filler C1 (om ikryssad) →
 Filler C / Cladding filler C2. Bufferten svetsas först och står därför före C2. Kryssrutan renderas
 alltid men är disabled och visas okryssad när Filler C = None; `useBuffer`-state behålls.
+
+## Markörstil i diagrammet (sep 2026)
+
+Materialmarkörer ritas som "brickor": större form med vit kontur och vit bokstav inuti (A cirkel,
+B fyrkant, C/C1/C2 romb; ritordning via markerLayer; material utanför axlarna = ihålig bricka vid kanten med pil och koordinattext). Svetspunktens orange ring (r=13, vit understroke) ritas under
+brickorna, så den syns som en ring runt A i enmaterialsläget. Material B är mörk magenta `#8a1c5a`
+(token `--color-mat-b`, klass `border-l-mat-b` på B-panelen) – en diagramdatafärg som medvetet
+ligger utanför HV-paletten, eftersom HV-blått försvann mot austenitfältet. Beslutat 2026-09-20.

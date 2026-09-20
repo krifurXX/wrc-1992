@@ -6,5 +6,7 @@
   --color-hv-blue: #1380a4;
   --color-hv-light: #e4f1f8;
   --color-hv-text: #202020;
+  /* diagram data colour for Material B — deliberately outside the HV palette for contrast */
+  --color-mat-b: #8a1c5a;
   --font-sans: Arial, Helvetica, sans-serif;
 }
