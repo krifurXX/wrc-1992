@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import LookupHint from './components/LookupHint'
 import MaterialSelect from './components/MaterialSelect'
 import ResultPanel, { type PassResult } from './components/ResultPanel'
 import WeldControls from './components/WeldControls'
@@ -8,6 +9,7 @@ import WrcDiagram, {
 } from './components/WrcDiagram'
 import { resolveMaterial, type MaterialSelection } from './data/materials'
 import { analyzeComposition, creq, mixComposition, multiPassCompositions, nieq } from './lib/calc'
+import { isSingleMaterialLookup } from './lib/lookup'
 import { collectWarnings } from './lib/warnings'
 
 export default function App() {
@@ -66,10 +68,13 @@ export default function App() {
 
   const final = passResults[passResults.length - 1]
 
+  // 100 % A without filler: the user is looking up Material A alone, so B is left out
+  const single = isSingleMaterialLookup(pctB, filler !== null)
+
   const warnings = collectWarnings(
     [
       { label: 'Material A', material: materialA },
-      { label: 'Material B', material: materialB },
+      ...(single ? [] : [{ label: 'Material B', material: materialB }]),
       ...(bufferActive ? [{ label: 'Buffer filler C1', material: bufferMat }] : []),
       ...(filler
         ? [{ label: showBuffer ? 'Cladding filler C2' : 'Filler C', material: filler }]
@@ -83,13 +88,12 @@ export default function App() {
   const bPt = { x: creq(materialB.composition), y: nieq(materialB.composition) }
   const basePt = { x: creq(baseMix), y: nieq(baseMix) }
 
-  const markers: DiagramMarker[] = [
-    { ...aPt, label: 'A', shape: 'circle', color: '#003b5b' },
-    { ...bPt, label: 'B', shape: 'square', color: '#1380a4' },
-  ]
-  const lines: DiagramLine[] = [
-    { x1: aPt.x, y1: aPt.y, x2: bPt.x, y2: bPt.y, color: '#003b5b', dash: '2 3' },
-  ]
+  const markers: DiagramMarker[] = [{ ...aPt, label: 'A', shape: 'circle', color: '#003b5b' }]
+  const lines: DiagramLine[] = []
+  if (!single) {
+    markers.push({ ...bPt, label: 'B', shape: 'square', color: '#1380a4' })
+    lines.push({ x1: aPt.x, y1: aPt.y, x2: bPt.x, y2: bPt.y, color: '#003b5b', dash: '2 3' })
+  }
 
   if (filler) {
     const cPt = { x: creq(filler.composition), y: nieq(filler.composition) }
@@ -142,6 +146,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto p-4 lg:p-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
         <section aria-label="Diagram">
           <WrcDiagram markers={markers} lines={lines} activeModeId={final.mode?.id ?? null} />
+          <LookupHint />
         </section>
 
         <section className="space-y-4" aria-label="Settings and result">

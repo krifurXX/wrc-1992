@@ -13,6 +13,7 @@ import {
   nieq,
   weldComposition,
 } from './calc'
+import { isSingleMaterialLookup } from './lookup'
 import { collectWarnings, DISCLAIMER, DISCLAIMER_NOTES, PRIMARY_REFERENCES } from './warnings'
 
 const byId = (id: string) => {
@@ -182,5 +183,14 @@ describe('collectWarnings — after expert review (September 2026)', () => {
   it('disclaimer uses the reviewer wording and cites both primary papers', () => {
     expect(DISCLAIMER).toBe('WRC-1992 predicts Ferrite Number (FN). The prediction applies to weld metal at arc-welding cooling rates and is only valid inside the drawn iso-FN lines. The prediction is subject to the limitations and assumptions of the original WRC-1992 research.')
     expect(PRIMARY_REFERENCES).toHaveLength(2)
+  })
+})
+
+describe('isSingleMaterialLookup', () => {
+  it('is true only at 100 % A without filler', () => {
+    expect(isSingleMaterialLookup(0, false)).toBe(true)
+    expect(isSingleMaterialLookup(0, true)).toBe(false)
+    expect(isSingleMaterialLookup(1, false)).toBe(false)
+    expect(isSingleMaterialLookup(50, false)).toBe(false)
   })
 })
