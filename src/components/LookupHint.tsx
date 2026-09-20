@@ -15,7 +15,8 @@ export default function LookupHint() {
             <strong>Base metal balance:</strong> move the slider all the way to the left (100 % A).
           </li>
           <li>
-            <strong>Filler C:</strong> choose <em>None — autogenous weld</em>.
+            <strong>Filler C</strong> (or <strong>Cladding filler C2</strong>): choose{' '}
+            <em>None — autogenous weld</em>.
           </li>
         </ol>
         <p>Material B is then hidden, and the result applies to Material A alone.</p>

@@ -162,24 +162,22 @@ export default function App() {
             onChange={(s) => s && setSelB(s)}
             accentClass="border-l-hv-blue"
           />
-          <MaterialSelect
-            label={showBuffer ? 'Cladding filler C2' : 'Filler C'}
-            value={fillerSel}
-            onChange={setFillerSel}
-            accentClass="border-l-teal-700"
-            allowNone
-          />
-          {filler && (
-            <label className="flex items-center gap-2 text-sm text-hv-dark px-1">
-              <input
-                type="checkbox"
-                checked={useBuffer}
-                onChange={(e) => setUseBuffer(e.target.checked)}
-                className="accent-teal-700"
-              />
-              Use a different filler for the first layer(s) (buffer)
-            </label>
-          )}
+          {/* Buffer is deposited first, so its toggle and panel come before the (cladding) filler.
+              The toggle is always rendered — disabled without a filler — so panels do not jump. */}
+          <label
+            className={`flex items-center gap-2 text-sm px-1 ${
+              filler ? 'text-hv-dark' : 'text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={useBuffer && filler !== null}
+              disabled={!filler}
+              onChange={(e) => setUseBuffer(e.target.checked)}
+              className="accent-teal-700"
+            />
+            Use a different filler for the first layer(s) (buffer)
+          </label>
           {filler && useBuffer && (
             <MaterialSelect
               label="Buffer filler C1"
@@ -188,6 +186,13 @@ export default function App() {
               accentClass="border-l-teal-700"
             />
           )}
+          <MaterialSelect
+            label={showBuffer ? 'Cladding filler C2' : 'Filler C'}
+            value={fillerSel}
+            onChange={setFillerSel}
+            accentClass="border-l-teal-700"
+            allowNone
+          />
           <WeldControls
             pctB={pctB}
             onPctB={setPctB}

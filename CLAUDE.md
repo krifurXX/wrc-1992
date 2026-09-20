@@ -88,3 +88,9 @@ skarpa hörn. Extra färger: filler C teal #0f766e, svetspunkt orange #d9480f.
 `LookupHint` (under diagrammet) beskriver hur man slår upp ett enda material: Material A, reglaget
 på 100 % A, Filler C = None. `isSingleMaterialLookup` (`src/lib/lookup.ts`) är då sann, och `App.tsx`
 utelämnar B-markören, linjen A–B och Material B ur varningskontrollen. Inget separat läge eller knapp.
+
+## Panelordning för tillsats (sep 2026)
+
+Inställningsspalten: Material A → Material B → buffert-kryssruta → Buffer filler C1 (om ikryssad) →
+Filler C / Cladding filler C2. Bufferten svetsas först och står därför före C2. Kryssrutan renderas
+alltid men är disabled och visas okryssad när Filler C = None; `useBuffer`-state behålls.
