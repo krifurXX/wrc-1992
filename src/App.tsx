@@ -135,12 +135,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 font-sans">
-      <header className="bg-hv-dark text-white px-6 py-4">
-        <h1 className="text-xl font-bold">WRC-1992 diagram — weld metal ferrite prediction</h1>
-        <p className="text-sm text-hv-light mt-0.5">
-          Select base materials and a filler metal and read the predicted Ferrite Number and
-          solidification mode of the weld metal
-        </p>
+      <header className="bg-hv-dark text-white px-6 py-4 flex items-center justify-between gap-6">
+        <div>
+          <h1 className="text-xl font-bold">WRC-1992 diagram — weld metal ferrite prediction</h1>
+          <p className="text-sm text-hv-light mt-0.5">
+            Select base materials and a filler metal and read the predicted Ferrite Number and
+            solidification mode of the weld metal
+          </p>
+        </div>
+        <img src="/hv-logo-white.png" alt="University West" className="h-12 w-auto shrink-0" />
       </header>
 
       <main className="max-w-7xl mx-auto p-4 lg:p-6 grid gap-4 lg:grid-cols-[2fr_1fr]">
