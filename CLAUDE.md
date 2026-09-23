@@ -82,6 +82,7 @@ Kända egenheter, avsiktliga:
 UI-text på engelska, kod och kommentarer på engelska. Decimaler med punkt.
 HV:s grafiska profil: mörkblå #003b5b, blå #1380a4, ljusblå #e4f1f8, Arial,
 skarpa hörn. Extra färger: filler C teal #0f766e, svetspunkt orange #d9480f.
+Vit HV-logga (`public/hv-logo-white.png`, engelsk variant) längst till höger i rubrikfältet (sep 2026).
 
 ## Enmaterialsläge (sep 2026)
 
