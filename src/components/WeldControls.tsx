@@ -77,7 +77,7 @@ export default function WeldControls({
                 type="range"
                 min={0}
                 max={100}
-                step={5}
+                step={1}
                 value={rootDilutionPct}
                 onChange={(e) => onRootDilution(Number(e.target.value))}
                 className="w-full accent-hv-blue"
@@ -96,7 +96,7 @@ export default function WeldControls({
                 type="range"
                 min={0}
                 max={100}
-                step={5}
+                step={1}
                 value={fillDilutionPct}
                 onChange={(e) => onFillDilution(Number(e.target.value))}
                 className="w-full accent-hv-blue"
